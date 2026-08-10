@@ -1,0 +1,302 @@
+-- ============================================
+-- CODESCOPE AI DATABASE
+-- ============================================
+
+-- 1. Create Database
+CREATE DATABASE codescope_ai;
+
+-- Select Database
+USE codescope_ai;
+
+
+-- ============================================
+-- 2. PROJECT TABLE
+-- ============================================
+
+CREATE TABLE project (
+    project_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_name VARCHAR(100) NOT NULL,
+    project_path VARCHAR(500) NOT NULL,
+    language VARCHAR(20) DEFAULT 'Java',
+    created_at DATETIME NOT NULL,
+    last_scanned DATETIME NULL
+);
+
+
+-- ============================================
+-- 3. ANALYSIS TABLE
+-- ============================================
+
+CREATE TABLE analysis (
+    analysis_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    scan_date DATETIME NOT NULL,
+    scan_duration DECIMAL(6,2),
+    total_files INT DEFAULT 0,
+    total_packages INT DEFAULT 0,
+    total_classes INT DEFAULT 0,
+    total_interfaces INT DEFAULT 0,
+    total_methods INT DEFAULT 0,
+    total_fields INT DEFAULT 0,
+    total_lines INT DEFAULT 0,
+    total_issues INT DEFAULT 0,
+    code_score DECIMAL(5,2),
+
+    CONSTRAINT fk_project
+        FOREIGN KEY (project_id)
+        REFERENCES project(project_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 4. JAVA_FILE TABLE
+-- ============================================
+
+CREATE TABLE java_file (
+    file_id INT AUTO_INCREMENT PRIMARY KEY,
+    analysis_id INT NOT NULL,
+
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+
+    package_name VARCHAR(255),
+    class_name VARCHAR(255),
+
+    class_type ENUM(
+        'CLASS',
+        'INTERFACE',
+        'ENUM',
+        'RECORD'
+    ),
+
+    lines_of_code INT DEFAULT 0,
+    file_size BIGINT DEFAULT 0,
+
+    CONSTRAINT fk_analysis
+        FOREIGN KEY (analysis_id)
+        REFERENCES analysis(analysis_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 5. METHOD TABLE
+-- ============================================
+
+CREATE TABLE method (
+    method_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    file_id INT NOT NULL,
+
+    method_name VARCHAR(255) NOT NULL,
+    return_type VARCHAR(100),
+
+    access_modifier ENUM(
+        'PUBLIC',
+        'PRIVATE',
+        'PROTECTED',
+        'DEFAULT'
+    ),
+
+    is_static BOOLEAN DEFAULT FALSE,
+    is_final BOOLEAN DEFAULT FALSE,
+
+    parameter_count INT DEFAULT 0,
+
+    start_line INT,
+    end_line INT,
+
+    cyclomatic_complexity INT DEFAULT 1,
+
+    CONSTRAINT fk_file
+        FOREIGN KEY (file_id)
+        REFERENCES java_file(file_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 6. FIELD TABLE
+-- ============================================
+
+CREATE TABLE field (
+    field_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    file_id INT NOT NULL,
+
+    field_name VARCHAR(255) NOT NULL,
+    data_type VARCHAR(100),
+
+    access_modifier ENUM(
+        'PUBLIC',
+        'PRIVATE',
+        'PROTECTED',
+        'DEFAULT'
+    ),
+
+    is_static BOOLEAN DEFAULT FALSE,
+    is_final BOOLEAN DEFAULT FALSE,
+
+    initial_value TEXT,
+    line_number INT,
+
+    CONSTRAINT fk_field_file
+        FOREIGN KEY (file_id)
+        REFERENCES java_file(file_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 7. IMPORT_STATEMENT TABLE
+-- ============================================
+
+CREATE TABLE import_statement (
+
+    import_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    file_id INT NOT NULL,
+
+    import_name VARCHAR(255) NOT NULL,
+
+    CONSTRAINT fk_import_file
+        FOREIGN KEY (file_id)
+        REFERENCES java_file(file_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 8. DEPENDENCY TABLE
+-- ============================================
+
+CREATE TABLE dependency (
+
+    dependency_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    analysis_id INT NOT NULL,
+
+    source_class VARCHAR(255) NOT NULL,
+    target_class VARCHAR(255) NOT NULL,
+
+    dependency_type ENUM(
+        'IMPORT',
+        'EXTENDS',
+        'IMPLEMENTS',
+        'CREATES',
+        'CALLS'
+    ),
+
+    CONSTRAINT fk_dependency_analysis
+        FOREIGN KEY (analysis_id)
+        REFERENCES analysis(analysis_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 9. CODE_ISSUE TABLE
+-- ============================================
+
+CREATE TABLE code_issue (
+
+    issue_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    analysis_id INT NOT NULL,
+
+    file_id INT NOT NULL,
+
+    method_id INT NULL,
+
+    issue_type VARCHAR(100) NOT NULL,
+
+    severity ENUM(
+        'LOW',
+        'MEDIUM',
+        'HIGH',
+        'CRITICAL'
+    ),
+
+    line_number INT,
+
+    description TEXT,
+    recommendation TEXT,
+
+    CONSTRAINT fk_issue_analysis
+        FOREIGN KEY (analysis_id)
+        REFERENCES analysis(analysis_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_issue_file
+        FOREIGN KEY (file_id)
+        REFERENCES java_file(file_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_issue_method
+        FOREIGN KEY (method_id)
+        REFERENCES method(method_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 10. REPORT TABLE
+-- ============================================
+
+CREATE TABLE report (
+
+    report_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    analysis_id INT NOT NULL,
+
+    report_name VARCHAR(255),
+
+    report_type ENUM(
+        'PDF',
+        'HTML',
+        'JSON',
+        'CSV'
+    ),
+
+    report_path VARCHAR(500),
+
+    generated_at DATETIME,
+
+    CONSTRAINT fk_report_analysis
+        FOREIGN KEY (analysis_id)
+        REFERENCES analysis(analysis_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 11. PROJECT_SETTINGS TABLE
+-- ============================================
+
+CREATE TABLE project_settings (
+
+    setting_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    project_id INT NOT NULL,
+
+    ignore_test_files BOOLEAN DEFAULT TRUE,
+
+    ignore_generated_code BOOLEAN DEFAULT TRUE,
+
+    auto_generate_report BOOLEAN DEFAULT FALSE,
+
+    minimum_score DECIMAL(5,2) DEFAULT 70.00,
+
+    CONSTRAINT fk_setting_project
+        FOREIGN KEY (project_id)
+        REFERENCES project(project_id)
+        ON DELETE CASCADE
+);
+
+
+-- ============================================
+-- 12. VERIFY TABLES
+-- ============================================
+
+SHOW TABLES;
