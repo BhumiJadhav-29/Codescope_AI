@@ -1,145 +1,168 @@
+```java
 package com.codescope;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
 
-import com.codescope.dao.ProjectHibernateDAO;
+import com.codescope.dao.ProjectDAO;
 import com.codescope.model.Project;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        Scanner scanner = new Scanner(System.in);
-        ProjectHibernateDAO dao = new ProjectHibernateDAO();
-        System.out.println(
-        	    "Total Projects: " + dao.getTotalProjects()
-        	);
-        while (true) {
+        Scanner sc = new Scanner(System.in);
+        ProjectDAO dao = new ProjectDAO();
 
-            System.out.println("\n==============================");
-            System.out.println("   CODESCOPE AI - HIBERNATE");
-            System.out.println("==============================");
+        int choice;
+
+        do {
+            System.out.println("\n================================");
+            System.out.println("       CODESCOPE AI - JDBC");
+            System.out.println("================================");
             System.out.println("1. Create Project");
             System.out.println("2. Read Project");
             System.out.println("3. Read All Projects");
             System.out.println("4. Update Project");
             System.out.println("5. Delete Project");
             System.out.println("6. Exit");
-            System.out.println("==============================");
-
+            System.out.println("================================");
             System.out.print("Enter your choice: ");
-            int choice = scanner.nextInt();
-            scanner.nextLine();
 
-            switch (choice) {
+            try {
+                choice = Integer.parseInt(sc.nextLine());
 
-                case 1:
+                switch (choice) {
 
-                    System.out.print("Enter project name: ");
-                    String name = scanner.nextLine();
+                    // CREATE
+                    case 1: {
+                        System.out.print("Enter project name: ");
+                        String name = sc.nextLine();
 
-                    System.out.print("Enter project path: ");
-                    String path = scanner.nextLine();
+                        System.out.print("Enter project path: ");
+                        String path = sc.nextLine();
 
-                    Project project = new Project(
+                        Project project = new Project(
+                            0,
                             name,
                             path,
                             "Java",
-                            LocalDateTime.now()
-                    );
+                            LocalDateTime.now(),
+                            null
+                        );
 
-                    dao.createProject(project);
-                    break;
-
-                case 2:
-
-                    System.out.print("Enter project ID: ");
-                    int readId = scanner.nextInt();
-
-                    Project foundProject = dao.getProjectById(readId);
-
-                    if (foundProject != null) {
-                        System.out.println("\nProject ID   : " + foundProject.getProjectId());
-                        System.out.println("Project Name : " + foundProject.getProjectName());
-                        System.out.println("Project Path : " + foundProject.getProjectPath());
-                        System.out.println("Language     : " + foundProject.getLanguage());
-                        System.out.println("Created At   : " + foundProject.getCreatedAt());
-                    } else {
-                        System.out.println("Project not found.");
+                        dao.createProject(project);
+                        break;
                     }
 
-                    break;
+                    // READ ONE
+                    case 2: {
+                        System.out.print("Enter project ID: ");
+                        int id = Integer.parseInt(sc.nextLine());
 
-                case 3:
+                        Project project = dao.getProjectById(id);
 
-                    List<Project> projects = dao.getAllProjects();
-
-                    if (projects == null || projects.isEmpty()) {
-                        System.out.println("No projects found.");
-                    } else {
-
-                        System.out.println("\n--------- ALL PROJECTS ---------");
-
-                        for (Project p : projects) {
+                        if (project != null) {
+                            System.out.println("\n--- Project Details ---");
                             System.out.println(
-                                    "ID: " + p.getProjectId()
-                                    + " | Name: " + p.getProjectName()
-                                    + " | Language: " + p.getLanguage()
+                                "Project ID: " + project.getProjectId()
                             );
+                            System.out.println(
+                                "Project Name: " + project.getProjectName()
+                            );
+                            System.out.println(
+                                "Project Path: " + project.getProjectPath()
+                            );
+                            System.out.println(
+                                "Language: " + project.getLanguage()
+                            );
+                            System.out.println(
+                                "Created At: " + project.getCreatedAt()
+                            );
+                            System.out.println(
+                                "Last Scanned: " + project.getLastScanned()
+                            );
+                        } else {
+                            System.out.println("Project not found.");
                         }
+                        break;
                     }
 
-                    break;
+                    // READ ALL
+                    case 3: {
+                        List<Project> projects = dao.getAllProjects();
 
-                case 4:
+                        if (projects.isEmpty()) {
+                            System.out.println("No projects found.");
+                        } else {
+                            System.out.println("\n--- All Projects ---");
 
-                    System.out.print("Enter project ID to update: ");
-                    int updateId = scanner.nextInt();
-                    scanner.nextLine();
-
-                    Project existingProject = dao.getProjectById(updateId);
-
-                    if (existingProject != null) {
-
-                        System.out.print("Enter new project name: ");
-                        String newName = scanner.nextLine();
-
-                        System.out.print("Enter new project path: ");
-                        String newPath = scanner.nextLine();
-
-                        existingProject.setProjectName(newName);
-                        existingProject.setProjectPath(newPath);
-                        existingProject.setLastScanned(LocalDateTime.now());
-
-                        dao.updateProject(existingProject);
-
-                    } else {
-                        System.out.println("Project not found.");
+                            for (Project project : projects) {
+                                System.out.println(
+                                    "ID: " + project.getProjectId()
+                                    + " | Name: " + project.getProjectName()
+                                    + " | Path: " + project.getProjectPath()
+                                    + " | Language: " + project.getLanguage()
+                                );
+                            }
+                        }
+                        break;
                     }
 
-                    break;
+                    // UPDATE
+                    case 4: {
+                        System.out.print("Enter project ID to update: ");
+                        int id = Integer.parseInt(sc.nextLine());
 
-                case 5:
+                        Project project = dao.getProjectById(id);
 
-                    System.out.print("Enter project ID to delete: ");
-                    int deleteId = scanner.nextInt();
+                        if (project != null) {
+                            System.out.print("Enter new project name: ");
+                            project.setProjectName(sc.nextLine());
 
-                    dao.deleteProject(deleteId);
+                            System.out.print("Enter new project path: ");
+                            project.setProjectPath(sc.nextLine());
 
-                    break;
+                            System.out.print("Enter new language: ");
+                            project.setLanguage(sc.nextLine());
 
-                case 6:
+                            dao.updateProject(project);
+                        } else {
+                            System.out.println("Project not found.");
+                        }
+                        break;
+                    }
 
-                    System.out.println("Exiting CodeScope AI...");
-                    scanner.close();
-                    return;
+                    // DELETE
+                    case 5: {
+                        System.out.print("Enter project ID to delete: ");
+                        int id = Integer.parseInt(sc.nextLine());
 
-                default:
+                        dao.deleteProject(id);
+                        break;
+                    }
 
-                    System.out.println("Invalid choice. Try again.");
+                    // EXIT
+                    case 6: {
+                        System.out.println("Exiting CodeScope AI...");
+                        break;
+                    }
+
+                    default:
+                        System.out.println(
+                            "Invalid choice. Please enter 1 to 6."
+                        );
+                }
+
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid numeric choice or ID.");
+                choice = 0;
             }
-        }
+
+        } while (choice != 6);
+
+        sc.close();
     }
 }
+```
