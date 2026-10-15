@@ -2,103 +2,144 @@ package com.codescope;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Scanner;
 
-import com.codescope.dao.ProjectDAO;
+import com.codescope.dao.ProjectHibernateDAO;
 import com.codescope.model.Project;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        ProjectDAO projectDAO = new ProjectDAO();
+        Scanner scanner = new Scanner(System.in);
+        ProjectHibernateDAO dao = new ProjectHibernateDAO();
+        System.out.println(
+        	    "Total Projects: " + dao.getTotalProjects()
+        	);
+        while (true) {
 
-        // ==============================
-        // CREATE
-        // ==============================
+            System.out.println("\n==============================");
+            System.out.println("   CODESCOPE AI - HIBERNATE");
+            System.out.println("==============================");
+            System.out.println("1. Create Project");
+            System.out.println("2. Read Project");
+            System.out.println("3. Read All Projects");
+            System.out.println("4. Update Project");
+            System.out.println("5. Delete Project");
+            System.out.println("6. Exit");
+            System.out.println("==============================");
 
-        Project project = new Project();
+            System.out.print("Enter your choice: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine();
 
-        project.setProjectName("CodeScope Demo");
-        project.setProjectPath("C:\\Projects\\CodeScopeDemo");
-        project.setLanguage("Java");
-        project.setCreatedAt(LocalDateTime.now());
+            switch (choice) {
 
-        projectDAO.createProject(project);
+                case 1:
 
+                    System.out.print("Enter project name: ");
+                    String name = scanner.nextLine();
 
-        // ==============================
-        // READ
-        // ==============================
+                    System.out.print("Enter project path: ");
+                    String path = scanner.nextLine();
 
-        List<Project> projects = projectDAO.getAllProjects();
+                    Project project = new Project(
+                            name,
+                            path,
+                            "Java",
+                            LocalDateTime.now()
+                    );
 
-        System.out.println("\n===== ALL PROJECTS =====");
+                    dao.createProject(project);
+                    break;
 
-        for (Project p : projects) {
+                case 2:
 
-            System.out.println("----------------------------");
-            System.out.println("Project ID : " + p.getProjectId());
-            System.out.println("Name       : " + p.getProjectName());
-            System.out.println("Path       : " + p.getProjectPath());
-            System.out.println("Language   : " + p.getLanguage());
+                    System.out.print("Enter project ID: ");
+                    int readId = scanner.nextInt();
+
+                    Project foundProject = dao.getProjectById(readId);
+
+                    if (foundProject != null) {
+                        System.out.println("\nProject ID   : " + foundProject.getProjectId());
+                        System.out.println("Project Name : " + foundProject.getProjectName());
+                        System.out.println("Project Path : " + foundProject.getProjectPath());
+                        System.out.println("Language     : " + foundProject.getLanguage());
+                        System.out.println("Created At   : " + foundProject.getCreatedAt());
+                    } else {
+                        System.out.println("Project not found.");
+                    }
+
+                    break;
+
+                case 3:
+
+                    List<Project> projects = dao.getAllProjects();
+
+                    if (projects == null || projects.isEmpty()) {
+                        System.out.println("No projects found.");
+                    } else {
+
+                        System.out.println("\n--------- ALL PROJECTS ---------");
+
+                        for (Project p : projects) {
+                            System.out.println(
+                                    "ID: " + p.getProjectId()
+                                    + " | Name: " + p.getProjectName()
+                                    + " | Language: " + p.getLanguage()
+                            );
+                        }
+                    }
+
+                    break;
+
+                case 4:
+
+                    System.out.print("Enter project ID to update: ");
+                    int updateId = scanner.nextInt();
+                    scanner.nextLine();
+
+                    Project existingProject = dao.getProjectById(updateId);
+
+                    if (existingProject != null) {
+
+                        System.out.print("Enter new project name: ");
+                        String newName = scanner.nextLine();
+
+                        System.out.print("Enter new project path: ");
+                        String newPath = scanner.nextLine();
+
+                        existingProject.setProjectName(newName);
+                        existingProject.setProjectPath(newPath);
+                        existingProject.setLastScanned(LocalDateTime.now());
+
+                        dao.updateProject(existingProject);
+
+                    } else {
+                        System.out.println("Project not found.");
+                    }
+
+                    break;
+
+                case 5:
+
+                    System.out.print("Enter project ID to delete: ");
+                    int deleteId = scanner.nextInt();
+
+                    dao.deleteProject(deleteId);
+
+                    break;
+
+                case 6:
+
+                    System.out.println("Exiting CodeScope AI...");
+                    scanner.close();
+                    return;
+
+                default:
+
+                    System.out.println("Invalid choice. Try again.");
+            }
         }
-
-
-        // ==============================
-        // UPDATE
-        // ==============================
-
-        Project updateProject = new Project();
-
-        updateProject.setProjectId(1);
-        updateProject.setProjectName("CodeScope AI");
-        updateProject.setProjectPath("C:\\Projects\\CodeScopeAI");
-        updateProject.setLanguage("Java");
-
-        boolean updated = projectDAO.updateProject(updateProject);
-
-        if (updated) {
-            System.out.println("\nProject updated successfully!");
-        } else {
-            System.out.println("\nProject not found.");
-        }
-
-
-        // ==============================
-        // READ AFTER UPDATE
-        // ==============================
-
-        projects = projectDAO.getAllProjects();
-
-        System.out.println("\n===== AFTER UPDATE =====");
-
-        for (Project p : projects) {
-
-            System.out.println("----------------------------");
-            System.out.println("Project ID : " + p.getProjectId());
-            System.out.println("Name       : " + p.getProjectName());
-            System.out.println("Path       : " + p.getProjectPath());
-            System.out.println("Language   : " + p.getLanguage());
-        }
-
-
-        // ==============================
-        // DELETE
-        // ==============================
-
-        /*
-         * Uncomment this section only when
-         * you actually want to delete project ID 1.
-         */
-
-        /*
-        boolean deleted = projectDAO.deleteProject(1);
-
-        if (deleted) {
-            System.out.println("\nProject deleted successfully!");
-        } else {
-            System.out.println("\nProject not found.");
-        }
-        */
     }
 }
